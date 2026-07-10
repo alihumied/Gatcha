@@ -1,94 +1,420 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>رادار — تحليلات السوشيال ميديا</title>
-  <style>
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
-:root{--bg:#0a0a0d;--bg-card:#131318;--line:#232330;--cyan:#25F4EE;--pink:#FE2C55;--text:#f2f2f5;--text-dim:#8b8b98;--text-faint:#55555f;}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Tajawal',sans-serif;min-height:100vh;padding:24px 16px 80px;background-image:radial-gradient(circle at 15% 0%,rgba(37,244,238,.06),transparent 40%),radial-gradient(circle at 85% 20%,rgba(254,44,85,.06),transparent 40%)}
-.wrap{max-width:720px;margin:0 auto} header{text-align:center;padding:20px 0 24px}.logo-mark{display:inline-flex;align-items:center;gap:10px;margin-bottom:14px}.logo-glyph{width:40px;height:40px;border-radius:12px;background:#000;position:relative;box-shadow:0 0 0 1px var(--line)}.logo-glyph:before,.logo-glyph:after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;top:13px}.logo-glyph:before{background:var(--cyan);left:8px;mix-blend-mode:screen}.logo-glyph:after{background:var(--pink);left:16px;mix-blend-mode:screen}h1{font-size:26px;font-weight:900;letter-spacing:-.5px}.sub{color:var(--text-dim);font-size:14px;margin-top:6px}.platform-row{display:flex;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap}.p-chip{font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;border:1px solid var(--line);color:var(--text-dim)}
-.panel{background:var(--bg-card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}.panel.notice{border-color:rgba(37,244,238,.3);background:rgba(37,244,238,.05)}.notice-text{font-size:12px;line-height:1.9;color:var(--text-dim)}.panel-label{font-size:12px;color:var(--text-dim);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}.key-status{font-family:'JetBrains Mono',monospace;font-size:11px}.key-status.ok{color:var(--cyan)}.key-status.missing{color:var(--text-faint)}
-.row{display:flex;gap:8px}input[type=text],input[type=password]{flex:1;background:#0c0c10;border:1px solid var(--line);color:var(--text);padding:12px 14px;border-radius:10px;font-family:'Tajawal',sans-serif;font-size:14px;outline:none;transition:border-color .15s;min-width:0}input:focus{border-color:var(--cyan)}input::placeholder{color:var(--text-faint)}button{font-family:'Tajawal',sans-serif;font-weight:700;font-size:14px;border:none;border-radius:10px;cursor:pointer;padding:12px 18px;transition:transform .1s,opacity .15s}button:active{transform:scale(.97)}.btn-main{background:linear-gradient(90deg,var(--cyan),var(--pink));color:#050506}.btn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--line)}.btn-ghost:hover{color:var(--text);border-color:var(--text-faint)}button:disabled{opacity:.5;cursor:not-allowed}button.loading{position:relative;color:transparent!important}button.loading:after{content:'';position:absolute;inset:0;margin:auto;width:16px;height:16px;border:2px solid rgba(0,0,0,.3);border-top-color:#050506;border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.add-row{margin-top:10px}
-.feed-head{display:flex;justify-content:space-between;align-items:baseline;margin:24px 0 12px;gap:8px}.feed-head h2{font-size:15px;color:var(--text-dim);font-weight:700}.count-chip{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint)}.platform-section{margin-bottom:22px}.platform-section-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}.platform-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}.platform-section-title{font-size:14px;font-weight:700;color:var(--text)}.platform-section-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);margin-right:auto}.empty{text-align:center;padding:50px 20px;color:var(--text-faint);border:1px dashed var(--line);border-radius:16px;font-size:13px;line-height:1.9}
-.card{background:var(--bg-card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}.platform-bar{position:absolute;top:0;right:0;width:3px;height:100%}.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.card-top-left{flex:1;min-width:0}.platform-tag{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;margin-bottom:6px;color:#000}.platform-tag.light{color:#000}.platform-tag.dark{color:#fff}.saved-link-title{display:block;color:var(--text);font-size:14px;font-weight:700;line-height:1.7;text-decoration:none;margin-top:4px}.saved-link-title:hover{color:var(--cyan)}.card-url-short{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);margin-top:3px;direction:ltr;text-align:right}.card-title{font-size:13px;color:var(--text-dim);margin-top:8px;line-height:1.6}.icon-btn{background:transparent;border:none;color:var(--text-faint);font-size:16px;padding:4px 6px;line-height:1;cursor:pointer;flex-shrink:0}.icon-btn:hover{color:var(--pink)}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.stat{background:#0c0c10;border:1px solid var(--line);border-radius:10px;padding:10px 6px;text-align:center}.stat .val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--text)}.stat .lbl{font-size:10px;color:var(--text-faint);margin-top:3px}.stat.views .val{color:var(--cyan)}.stat.likes .val{color:var(--pink)}.hashtags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.hashtag{font-size:11px;color:var(--cyan);background:rgba(37,244,238,.08);border:1px solid rgba(37,244,238,.25);padding:3px 9px;border-radius:20px;font-family:'JetBrains Mono',monospace}.card-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.card-actions button{flex:1;min-width:100px;font-size:12px;padding:9px}.error-msg{background:rgba(254,44,85,.08);border:1px solid rgba(254,44,85,.3);color:#ff8fa3;font-size:12px;padding:10px 12px;border-radius:10px;margin-top:10px;line-height:1.7}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--line);color:var(--text);padding:12px 20px;border-radius:12px;font-size:13px;z-index:99;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}footer{text-align:center;margin-top:30px;font-size:11px;color:var(--text-faint)}@media(max-width:560px){.row{flex-direction:column}.stats-grid{grid-template-columns:repeat(2,1fr)}.feed-head{flex-wrap:wrap}}
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>رادار — تحليلات السوشيال ميديا</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root{
+    --bg: #0a0a0d;
+    --bg-card: #131318;
+    --line: #232330;
+    --cyan: #25F4EE;
+    --pink: #FE2C55;
+    --text: #f2f2f5;
+    --text-dim: #8b8b98;
+    --text-faint: #55555f;
+
+    --p-tiktok: #FE2C55;
+    --p-youtube: #FF0033;
+    --p-instagram: #C13584;
+    --p-facebook: #1877F2;
+    --p-twitter: #ffffff;
+    --p-linkedin: #0A66C2;
+    --p-unknown: #8b8b98;
+  }
+
+  *{ box-sizing: border-box; margin:0; padding:0; }
+
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Tajawal', sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 80px;
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(37,244,238,0.06), transparent 40%),
+      radial-gradient(circle at 85% 20%, rgba(254,44,85,0.06), transparent 40%);
+  }
+
+  .wrap{ max-width: 720px; margin: 0 auto; }
+
+  header{ text-align:center; padding: 20px 0 24px; }
+  .logo-mark{ display:inline-flex; align-items:center; gap:10px; margin-bottom: 14px; }
+  .logo-glyph{
+    width: 40px; height: 40px; border-radius: 12px; background:#000;
+    position: relative; box-shadow: 0 0 0 1px var(--line);
+  }
+  .logo-glyph::before, .logo-glyph::after{ content:''; position:absolute; width:14px; height:14px; border-radius:50%; top:13px; }
+  .logo-glyph::before{ background: var(--cyan); left:8px; mix-blend-mode: screen; }
+  .logo-glyph::after{ background: var(--pink); left:16px; mix-blend-mode: screen; }
+  h1{ font-size: 26px; font-weight: 900; letter-spacing: -0.5px; }
+  .sub{ color: var(--text-dim); font-size: 14px; margin-top: 6px; }
+
+  .platform-row{ display:flex; justify-content:center; gap:8px; margin-top:16px; flex-wrap:wrap; }
+  .p-chip{
+    font-size:11px; font-weight:700; padding:5px 10px; border-radius:20px;
+    border:1px solid var(--line); color:var(--text-dim);
+  }
+
+  .panel{ background: var(--bg-card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:16px; }
+  .panel.notice{ border-color:rgba(37,244,238,0.3); background:rgba(37,244,238,0.05); }
+  .notice-text{ font-size:12px; line-height:1.9; color:var(--text-dim); }
+  .panel-label{ font-size:12px; color:var(--text-dim); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
+  .key-status{ font-family:'JetBrains Mono',monospace; font-size:11px; }
+  .key-status.ok{ color: var(--cyan); }
+  .key-status.missing{ color: var(--text-faint); }
+
+  .row{ display:flex; gap:8px; }
+  input[type=text], input[type=password]{
+    flex:1; background:#0c0c10; border:1px solid var(--line); color:var(--text);
+    padding:12px 14px; border-radius:10px; font-family:'Tajawal',sans-serif; font-size:14px;
+    outline:none; transition: border-color .15s;
+  }
+  input:focus{ border-color: var(--cyan); }
+  input::placeholder{ color: var(--text-faint); }
+
+  button{
+    font-family:'Tajawal',sans-serif; font-weight:700; font-size:14px;
+    border:none; border-radius:10px; cursor:pointer; padding:12px 18px;
+    transition: transform .1s, opacity .15s;
+  }
+  button:active{ transform: scale(0.97); }
+  .btn-main{ background: linear-gradient(90deg, var(--cyan), var(--pink)); color:#050506; }
+  .btn-ghost{ background: transparent; color: var(--text-dim); border:1px solid var(--line); }
+  .btn-ghost:hover{ color: var(--text); border-color: var(--text-faint); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  button.loading{ position:relative; color: transparent !important; }
+  button.loading::after{
+    content:''; position:absolute; inset:0; margin:auto; width:16px; height:16px;
+    border:2px solid rgba(0,0,0,.3); border-top-color:#050506; border-radius:50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .add-row{ margin-top:10px; }
+
+  .feed-head{ display:flex; justify-content:space-between; align-items:baseline; margin:24px 0 12px; }
+  .feed-head h2{ font-size:15px; color: var(--text-dim); font-weight:700; }
+  .count-chip{ font-family:'JetBrains Mono',monospace; font-size:11px; color: var(--text-faint); }
+
+  .platform-section{ margin-bottom: 22px; }
+  .platform-section-head{
+    display:flex; align-items:center; gap:10px; margin-bottom:10px; padding-bottom:8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .platform-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .platform-section-title{ font-size:14px; font-weight:700; color: var(--text); }
+  .platform-section-count{ font-family:'JetBrains Mono',monospace; font-size:11px; color: var(--text-faint); margin-right:auto; }
+
+  .account-group{ margin-bottom: 16px; padding-right: 8px; border-right: 2px solid var(--line); }
+  .account-group-head{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    margin-bottom:10px; padding: 2px 4px;
+  }
+  .account-group-name{ font-size:13px; font-weight:700; color: var(--text); }
+  .account-group-country{ font-size:11px; color: var(--text-faint); margin-top:2px; }
+
+  .empty{
+    text-align:center; padding:50px 20px; color: var(--text-faint);
+    border:1px dashed var(--line); border-radius:16px; font-size:13px; line-height:1.9;
+  }
+
+  .card{ background: var(--bg-card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:12px; position:relative; overflow:hidden; }
+  .platform-bar{ position:absolute; top:0; right:0; width:3px; height:100%; }
+  .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .card-top-left{ flex:1; min-width:0; }
+  .platform-tag{
+    display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700;
+    padding:3px 8px; border-radius:20px; margin-bottom:6px; color:#000;
+  }
+  .card-url{ font-family:'JetBrains Mono',monospace; font-size:11px; color: var(--text-dim); overflow-wrap:anywhere; direction:ltr; text-align:right; }
+  .card-title{ font-size:13px; color:var(--text); margin-top:4px; line-height:1.6; }
+  .icon-btn{ background:transparent; border:none; color: var(--text-faint); font-size:16px; padding:4px 6px; line-height:1; cursor:pointer; flex-shrink:0; }
+  .icon-btn:hover{ color: var(--pink); }
+
+  .account-row{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:#0c0c10; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:12px;
+  }
+  .account-name{ font-size:13px; font-weight:700; color: var(--text); }
+  .account-meta{ font-size:11px; color: var(--text-faint); margin-top:2px; }
+  .account-link{ font-size:11px; color: var(--cyan); text-decoration:none; white-space:nowrap; }
+
+  .stats-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-top:12px; }
+  .stat{ background:#0c0c10; border:1px solid var(--line); border-radius:10px; padding:10px 6px; text-align:center; }
+  .stat .val{ font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600; color: var(--text); }
+  .stat .lbl{ font-size:10px; color: var(--text-faint); margin-top:3px; }
+  .stat.views .val{ color: var(--cyan); }
+  .stat.likes .val{ color: var(--pink); }
+
+  .hashtags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .hashtag{ font-size:11px; color: var(--cyan); background:rgba(37,244,238,0.08); border:1px solid rgba(37,244,238,0.25); padding:3px 9px; border-radius:20px; font-family:'JetBrains Mono',monospace; }
+  .no-hashtags{ font-size:11px; color: var(--text-faint); margin-top:10px; }
+
+  .card-actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .card-actions button{ flex:1; min-width:100px; font-size:12px; padding:9px; }
+
+  .comments-box, .channel-box{ margin-top:12px; border-top:1px dashed var(--line); padding-top:12px; max-height:280px; overflow-y:auto; }
+  .comment{ padding:8px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .comment:last-child{ border-bottom:none; }
+  .comment .who{ color: var(--cyan); font-weight:700; font-size:12px; }
+  .comment .txt{ color: var(--text-dim); margin-top:2px; line-height:1.6; }
+  .comment .meta{ color: var(--text-faint); font-size:10px; margin-top:3px; font-family:'JetBrains Mono',monospace; }
+
+  .channel-grid{ display:grid; grid-template-columns: repeat(2,1fr); gap:8px; }
+  .channel-stat{ background:#0c0c10; border:1px solid var(--line); border-radius:10px; padding:10px; }
+  .channel-stat .val{ font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; }
+  .channel-stat .lbl{ font-size:10px; color: var(--text-faint); margin-top:2px; }
+  .channel-bio{ grid-column: span 2; font-size:12px; color: var(--text-dim); line-height:1.7; padding:8px 2px 0; }
+
+  .error-msg{ background: rgba(254,44,85,0.08); border:1px solid rgba(254,44,85,0.3); color:#ff8fa3; font-size:12px; padding:10px 12px; border-radius:10px; margin-top:10px; line-height:1.7; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background: var(--bg-card); border:1px solid var(--line); color:var(--text);
+    padding:12px 20px; border-radius:12px; font-size:13px; z-index:99;
+    opacity:0; pointer-events:none; transition: opacity .25s, transform .25s;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(-6px); }
+
+  footer{ text-align:center; margin-top:30px; font-size:11px; color: var(--text-faint); }
 </style>
- </head>
- <body>
-  <div class="wrap">
-   <header>
-    <div class="logo-mark">
-     <div class="logo-glyph"></div>
-    </div>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="logo-mark"><div class="logo-glyph"></div></div>
     <h1>رادار</h1>
     <div class="sub">احفظ روابط من أي منصة وتابع المشاهدات، اللايكات، الهاشتاقات، والحساب الأصلي</div>
     <div class="platform-row">
-     <span class="p-chip">TikTok</span><span class="p-chip">YouTube</span><span class="p-chip">Instagram</span><span class="p-chip">Facebook</span><span class="p-chip">X / Twitter</span><span class="p-chip">LinkedIn</span>
+      <span class="p-chip">TikTok</span><span class="p-chip">YouTube</span><span class="p-chip">Instagram</span>
+      <span class="p-chip">Facebook</span><span class="p-chip">X / Twitter</span><span class="p-chip">LinkedIn</span>
     </div>
-   </header>
-   <div class="panel">
-    <div class="panel-label">
-     <span>مفتاح SocialKit API</span><span id="keyStatus" class="key-status missing">غير محفوظ</span>
-    </div>
-    <div class="row">
-     <input type="password" id="apiKeyInput" placeholder="الصق مفتاح الوصول هنا (access_key)">
-     <button class="btn-main" id="saveKeyBtn">حفظ</button>
-    </div>
-   </div>
-   <div class="panel">
-    <div class="panel-label">
-     <span>إضافة رابط (أي منصة مدعومة)</span>
-    </div>
-    <div class="row add-row">
-     <input type="text" id="urlInput" placeholder="الصق رابط فيديو / منشور / بروفايل">
-     <button class="btn-main" id="addBtn">حفظ وجلب البيانات</button>
-    </div>
-    <div class="row add-row">
-     <button class="btn-ghost" id="pasteBtn" style="flex:1;">📋 لصق من الحافظة</button>
-    </div>
-    <div class="notice-text" style="margin-top:8px;">أي رابط تضيفه سيظهر باسم مختصر تحت نوع المنصة بدل عرض الرابط الكامل.</div>
-   </div>
-   <div class="feed-head">
-    <h2>المحفوظات</h2>
-    <button class="btn-ghost" style="padding:6px 12px;font-size:12px;" onclick="retryAllPending()">🔄 إعادة محاولة الناقص</button>
-    <span class="count-chip" id="countChip">0</span>
-   </div>
-   <div id="feed"></div>
-   <footer>البيانات تُجلب مباشرة من SocialKit API باستخدام مفتاحك الخاص</footer>
+  </header>
+
+  <div class="panel notice">
+    <div class="notice-text">⚠ افتح هذا الملف مباشرة في متصفح (Chrome) بعد تحميله على جهازك — لن يعمل جلب البيانات داخل معاينة المحادثة لأنها بيئة معزولة عن الإنترنت الخارجي.</div>
   </div>
-  <div class="toast" id="toast"></div>
-  <script>
-const API_BASE='https://api.socialkit.dev';
-const PLATFORMS={tiktok:{match:/tiktok\.com/i,label:'TikTok',color:'#FE2C55',stats:'/tiktok/stats'},youtube:{match:/youtube\.com|youtu\.be/i,label:'YouTube',color:'#FF0033',stats:'/youtube/stats'},instagram:{match:/instagram\.com/i,label:'Instagram',color:'#C13584',stats:'/instagram/stats'},facebook:{match:/facebook\.com|fb\.watch/i,label:'Facebook',color:'#1877F2',stats:'/facebook/stats'},twitter:{match:/twitter\.com|x\.com/i,label:'X / Twitter',color:'#ffffff',stats:'/twitter/tweet'},linkedin:{match:/linkedin\.com/i,label:'LinkedIn',color:'#0A66C2',stats:'/linkedin/post'},github:{match:/github\.com/i,label:'GitHub',color:'#8b5cf6',stats:null},telegram:{match:/t\.me|telegram\.me/i,label:'Telegram',color:'#2AABEE',stats:null},snapchat:{match:/snapchat\.com/i,label:'Snapchat',color:'#FFFC00',stats:null}};
-let apiKey='';let videos=[];const el=id=>document.getElementById(id);
-function toast(msg){const t=el('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
-function fmtNum(n){if(n===null||n===undefined||isNaN(n))return '—';n=Number(n);if(n>=1000000)return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';if(n>=1000)return(n/1000).toFixed(1).replace(/\.0$/,'')+'K';return String(n)}
-function detectPlatform(url){for(const key in PLATFORMS){if(PLATFORMS[key].match.test(url))return key}return null}
-function getPlatformInfo(url){const key=detectPlatform(url);if(key&&PLATFORMS[key])return{key,label:PLATFORMS[key].label,color:PLATFORMS[key].color,stats:PLATFORMS[key].stats};return{key:'unknown',label:'مواقع عامة',color:'#8b8b98',stats:null}}
-function cleanText(text){if(!text)return'';return String(text).replace(/https?:\/\/[^\s]+/gi,'').replace(/[\-_]+/g,' ').replace(/\s+/g,' ').trim()}
-function normalizeUrl(url){url=url.trim();if(!/^https?:\/\//i.test(url))url='https://'+url;return url}
-function getShortDomain(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch(e){return''}}
-function getReadableLinkTitle(url,fallbackTitle){if(fallbackTitle){const cleaned=cleanText(fallbackTitle);if(cleaned)return cleaned.length>90?cleaned.slice(0,90)+'…':cleaned}try{const u=new URL(url);const host=u.hostname.replace(/^www\./,'');let parts=u.pathname.split('/').filter(Boolean).map(p=>{try{return decodeURIComponent(p)}catch(e){return p}}).filter(p=>!/^[0-9]+$/.test(p)).filter(p=>!['watch','reel','reels','shorts','video','videos','post','status','posts'].includes(p.toLowerCase()));if(parts.length){let title=cleanText(parts[parts.length-1]);return title.length>90?title.slice(0,90)+'…':title}if(u.searchParams.get('v'))return 'فيديو YouTube';return host}catch(e){return url}}
-function extractHashtags(text){if(!text)return[];const m=text.match(/#[\p{L}\p{N}_]+/gu);return m?[...new Set(m)].slice(0,20):[]}
-function setKeyStatus(ok){const s=el('keyStatus');if(ok){s.textContent='محفوظ ✓';s.className='key-status ok'}else{s.textContent='غير محفوظ';s.className='key-status missing'}}
-async function loadState(){try{const savedKey=localStorage.getItem('socialkit-access-key');if(savedKey){apiKey=savedKey;el('apiKeyInput').value=apiKey;setKeyStatus(true)}}catch(e){}try{const savedList=localStorage.getItem('saved-videos-v3')||localStorage.getItem('saved-videos-v2');if(savedList){videos=JSON.parse(savedList).map(v=>({...v,title:getReadableLinkTitle(v.url,v.title)}))}}catch(e){videos=[]}renderFeed()}
-async function persistVideos(){try{localStorage.setItem('saved-videos-v3',JSON.stringify(videos))}catch(e){console.error(e)}}
-el('saveKeyBtn').addEventListener('click',()=>{const val=el('apiKeyInput').value.trim();if(!val){toast('أدخل المفتاح أولاً');return}apiKey=val;try{localStorage.setItem('socialkit-access-key',apiKey);setKeyStatus(true);toast('تم حفظ المفتاح')}catch(e){toast('تعذر حفظ المفتاح')}});
-async function callApi(path,url){if(!apiKey)throw new Error('لم يتم حفظ مفتاح API بعد');const endpoint=`${API_BASE}${path}?access_key=${encodeURIComponent(apiKey)}&url=${encodeURIComponent(url)}`;const res=await fetch(endpoint);let data;try{data=await res.json()}catch(e){throw new Error('تعذرت قراءة استجابة الخادم')}if(!res.ok){const msg=(data&&(data.error||data.message))||`فشل الطلب (${res.status})`;throw new Error(msg)}return data}
-function extractStats(raw){const d=raw&&raw.data?raw.data:raw||{};const pick=(...keys)=>{for(const k of keys){if(d[k]!==undefined&&d[k]!==null)return d[k]}return null};const reactionsLikes=Array.isArray(d.reactions)?d.reactions.reduce((sum,r)=>sum+(r.count||0),0):null;return{views:pick('play_count','views','view_count','playCount'),likes:pick('digg_count','like_count','likes','likeCount')??reactionsLikes,comments:pick('comment_count','comments','commentCount'),shares:pick('share_count','shares','shareCount'),channelName:pick('channelName','author','author_name','nickname','username','page','pageName'),channelLink:pick('channelLink','profileUrl','authorUrl','pageUrl'),title:pick('title','desc','description','text','caption')}}
-async function fetchAndUpdate(item){const info=getPlatformInfo(item.url);if(!info.stats){item.status='saved';item.error='هذه المنصة محفوظة كرابط فقط ولا يوجد مسار API مضبوط لها';return}item.status='loading';renderFeed();try{const raw=await callApi(info.stats,item.url);const stats=extractStats(raw);item.stats=stats;item.title=getReadableLinkTitle(item.url,stats.title);item.hashtags=extractHashtags(stats.title);item.channelName=stats.channelName||item.channelName;item.channelLink=stats.channelLink||item.channelLink;item.status='ok';item.error=''}catch(e){item.status='pending';item.error=e.message||'تعذر جلب البيانات'}finally{await persistVideos();renderFeed()}}
-async function addUrl(url){url=normalizeUrl(url);try{new URL(url)}catch(e){toast('الرابط غير صحيح');return}if(videos.some(v=>v.url===url)){toast('الرابط محفوظ مسبقاً');return}const info=getPlatformInfo(url);const item={id:String(Date.now()),url,platform:info.key,platformLabel:info.label,title:getReadableLinkTitle(url),createdAt:new Date().toISOString(),status:'saved'};videos.unshift(item);await persistVideos();renderFeed();if(apiKey&&info.stats)await fetchAndUpdate(item);else toast('تم حفظ الرابط وتصنيفه')}
-el('addBtn').addEventListener('click',async()=>{const input=el('urlInput');const url=input.value.trim();if(!url){toast('الصق الرابط أولاً');return}const btn=el('addBtn');btn.classList.add('loading');btn.disabled=true;try{await addUrl(url);input.value=''}finally{btn.classList.remove('loading');btn.disabled=false}});
-el('urlInput').addEventListener('keydown',e=>{if(e.key==='Enter')el('addBtn').click()});
-el('pasteBtn').addEventListener('click',async()=>{try{const text=await navigator.clipboard.readText();if(!text){toast('الحافظة فارغة');return}el('urlInput').value=text.trim();toast('تم لصق الرابط')}catch(e){toast('المتصفح لم يسمح بقراءة الحافظة')}});
-function renderCard(item){const info=getPlatformInfo(item.url);const title=getReadableLinkTitle(item.url,item.title);const domain=getShortDomain(item.url);const tagClass=info.color==='#ffffff'||info.color==='#FFFC00'?'light':'dark';const s=item.stats||{};return `<div class="card"><div class="platform-bar" style="background:${info.color}"></div><div class="card-top"><div class="card-top-left"><div class="platform-tag ${tagClass}" style="background:${info.color}">${info.label}</div><a class="saved-link-title" href="${item.url}" target="_blank" rel="noopener">${title}</a><div class="card-url-short">${domain}</div>${item.channelName?`<div class="card-title">الحساب: ${item.channelName}</div>`:''}</div><button class="icon-btn" onclick="deleteVideo('${item.id}')" title="حذف">×</button></div><div class="stats-grid"><div class="stat views"><div class="val">${fmtNum(s.views)}</div><div class="lbl">مشاهدات</div></div><div class="stat likes"><div class="val">${fmtNum(s.likes)}</div><div class="lbl">لايكات</div></div><div class="stat"><div class="val">${fmtNum(s.comments)}</div><div class="lbl">تعليقات</div></div><div class="stat"><div class="val">${fmtNum(s.shares)}</div><div class="lbl">مشاركات</div></div></div>${item.hashtags&&item.hashtags.length?`<div class="hashtags">${item.hashtags.map(h=>`<span class="hashtag">${h}</span>`).join('')}</div>`:''}${item.error?`<div class="error-msg">${item.error}</div>`:''}<div class="card-actions"><button class="btn-ghost" onclick="window.open('${item.url}','_blank')">فتح الرابط</button><button class="btn-ghost" onclick="retryOne('${item.id}')">تحديث البيانات</button></div></div>`}
-function renderFeed(){const feed=el('feed');el('countChip').textContent=videos.length;if(!videos.length){feed.innerHTML='<div class="empty">لا توجد روابط محفوظة بعد.<br>الصق أي رابط وسيتم حفظه وتصنيفه حسب المنصة.</div>';return}const grouped={};videos.forEach(item=>{const info=getPlatformInfo(item.url);if(!grouped[info.key])grouped[info.key]={label:info.label,color:info.color,items:[]};grouped[info.key].items.push(item)});feed.innerHTML=Object.keys(grouped).map(key=>{const group=grouped[key];return `<div class="platform-section"><div class="platform-section-head"><span class="platform-dot" style="background:${group.color}"></span><span class="platform-section-title">${group.label}</span><span class="platform-section-count">${group.items.length}</span></div>${group.items.map(renderCard).join('')}</div>`}).join('')}
-async function deleteVideo(id){videos=videos.filter(v=>v.id!==id);await persistVideos();renderFeed();toast('تم حذف الرابط')}
-async function retryOne(id){const item=videos.find(v=>v.id===id);if(!item)return;await fetchAndUpdate(item)}
-async function retryAllPending(){if(!apiKey){toast('احفظ مفتاح API أولاً');return}const list=videos.filter(v=>getPlatformInfo(v.url).stats);if(!list.length){toast('لا توجد روابط قابلة للتحديث');return}for(const item of list)await fetchAndUpdate(item);toast('تمت إعادة المحاولة')}
-loadState();
-</script>
- </body>
-</html>
+
+  <div class="panel">
+    <div class="panel-label"><span>مفتاح SocialKit API</span><span id="keyStatus" class="key-status missing">غير محفوظ</span></div>
+    <div class="row">
+      <input type="password" id="apiKeyInput" placeholder="الصق مفتاح الوصول هنا (access_key)">
+      <button class="btn-main" id="saveKeyBtn">حفظ</button>
+    </div>
+    <div class="row add-row">
+      <button class="btn-ghost" id="testModeBtn" style="flex:1;">🧪 وضع الاختبار: مطفأ</button>
+    </div>
+    <div class="notice-text" style="margin-top:8px;">فعّل وضع الاختبار عشان تجرب أي رابط حقيقي (تحديث، بيانات الحساب، تعليقات) ببيانات وهمية بدون ما يستهلك رصيد مفتاحك الفعلي.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label"><span>إضافة رابط (أي منصة مدعومة)</span></div>
+    <div class="row add-row">
+      <input type="text" id="urlInput" placeholder="الصق رابط فيديو / منشور / بروفايل">
+      <button class="btn-main" id="addBtn">حفظ وجلب البيانات</button>
+    </div>
+    <div class="row add-row">
+      <button class="btn-ghost" id="pasteBtn" style="flex:1;">📋 لصق تلقائي من الحافظة</button>
+    </div>
+    <div class="row add-row">
+      <button class="btn-ghost" id="demoBtn" style="flex:1;">🧪 تجربة النظام ببيانات وهمية (بدون مفتاح)</button>
+    </div>
+    <div class="notice-text" style="margin-top:8px;">فعّل هذا الزر مرة واحدة (يطلب المتصفح إذن الوصول للحافظة). بعدها، أي رابط تنسخه من أي تطبيق وترجع لهذه الصفحة، رح يتحفظ تلقائياً.</div>
+  </div>
+
+  <div class="feed-head">
+    <h2>المحفوظات</h2>
+    <button class="btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="retryAllPending()">🔄 إعادة محاولة الناقص</button>
+    <span class="count-chip" id="countChip">0</span>
+  </div>
+
+  <div class="panel" style="border-color:rgba(255,216,102,0.35); background:rgba(255,216,102,0.05);">
+    <div class="notice-text" style="margin-bottom:10px;">⚠ احفظ نسخة احتياطية بشكل دوري من هنا — هذا يحميك من ضياع الروابط لو انمسح تخزين المتصفح لأي سبب.</div>
+    <div class="row">
+      <button class="btn-ghost" style="flex:1;" onclick="exportBackup()">⬇️ تصدير نسخة احتياطية</button>
+      <button class="btn-ghost" style="flex:1;" onclick="el('importFile').click()">⬆️ استيراد نسخة احتياطية</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json" style="display:none;">
+  </div>
+
+  <div id="feed"></div>
+
+  <footer>البيانات تُجلب مباشرة من SocialKit API باستخدام مفتاحك الخاص</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = 'https://api.socialkit.dev';
+
+const PLATFORMS = {
+  tiktok:    { match:/tiktok\.com/i,            label:'TikTok',     color:'#FE2C55', stats:'/tiktok/stats',     comments:'/tiktok/comments',     channel:'/tiktok/channel-stats' },
+  youtube:   { match:/youtube\.com|youtu\.be/i, label:'YouTube',    color:'#FF0033', stats:'/youtube/stats',    comments:'/youtube/comments',    channel:'/youtube/channel-stats' },
+  instagram: { match:/instagram\.com/i,         label:'Instagram',  color:'#C13584', stats:'/instagram/stats', comments:'/instagram/comments', channel:'/instagram/channel-stats' },
+  facebook:  { match:/facebook\.com|fb\.watch/i,label:'Facebook',   color:'#1877F2', stats:'/facebook/stats',  comments:'/facebook/comments',  channel:'/facebook/channel-stats' },
+  twitter:   { match:/twitter\.com|x\.com/i,    label:'X / Twitter',color:'#ffffff', stats:'/twitter/tweet',   comments:null,                   channel:'/twitter/profile' },
+  linkedin:  { match:/linkedin\.com/i,          label:'LinkedIn',   color:'#0A66C2', stats:'/linkedin/post',   comments:null,                   channel:'/linkedin/profile' },
+};
+
+function detectPlatform(url){
+  for(const key in PLATFORMS){ if(PLATFORMS[key].match.test(url)) return key; }
+  return null;
+}
+
+let apiKey = '';
+let testMode = false;
+let videos = [];
+
+const el = (id) => document.getElementById(id);
+
+function toast(msg){
+  const t = el('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+function fmtNum(n){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  n = Number(n);
+  if(n >= 1_000_000) return (n/1_000_000).toFixed(1).replace(/\.0$/,'') + 'M';
+  if(n >= 1_000) return (n/1_000).toFixed(1).replace(/\.0$/,'') + 'K';
+  return String(n);
+}
+
+function extractHashtags(text){
+  if(!text) return [];
+  const matches = text.match(/#[\p{L}\p{N}_]+/gu);
+  if(!matches) return [];
+  return [...new Set(matches)].slice(0, 20);
+}
+
+// ---------- storage (localStorage) ----------
+async function loadState(){
+  try{
+    const savedKey = localStorage.getItem('socialkit-access-key');
+    if(savedKey){ apiKey = savedKey; el('apiKeyInput').value = apiKey; setKeyStatus(true); }
+  }catch(e){}
+  try{
+    const savedTestMode = localStorage.getItem('test-mode');
+    if(savedTestMode === '1'){ testMode = true; setTestModeUI(); }
+  }catch(e){}
+  try{
+    const savedList = localStorage.getItem('saved-videos-v2');
+    if(savedList){ videos = JSON.parse(savedList); }
+  }catch(e){ videos = []; }
+  renderFeed();
+}
+async function persistVideos(){
+  try{ localStorage.setItem('saved-videos-v2', JSON.stringify(videos)); }
+  catch(e){ console.error('storage error', e); }
+}
+function setKeyStatus(ok){
+  const s = el('keyStatus');
+  if(ok){ s.textContent = 'محفوظ ✓'; s.className = 'key-status ok'; }
+  else{ s.textContent = 'غير محفوظ'; s.className = 'key-status missing'; }
+}
+el('saveKeyBtn').addEventListener('click', ()=>{
+  const val = el('apiKeyInput').value.trim();
+  if(!val){ toast('أدخل المفتاح أولاً'); return; }
+  apiKey = val;
+  try{ localStorage.setItem('socialkit-access-key', apiKey); setKeyStatus(true); toast('تم حفظ المفتاح'); }
+  catch(e){ toast('تعذر حفظ المفتاح'); }
+});
+
+function setTestModeUI(){
+  const btn = el('testModeBtn');
+  if(testMode){ btn.textContent = '🧪 وضع الاختبار: مُفعّل (لا يستهلك المفتاح)'; btn.style.color = '#25F4EE'; btn.style.borderColor = 'rgba(37,244,238,0.5)'; }
+  else{ btn.textContent = '🧪 وضع الاختبار: مطفأ'; btn.style.color = ''; btn.style.borderColor = ''; }
+}
+el('testModeBtn').addEventListener('click', ()=>{
+  testMode = !testMode;
+  try{ localStorage.setItem('test-mode', testMode ? '1' : '0'); }catch(e){}
+  setTestModeUI();
+  toast(testMode ? 'تم تفعيل وضع الاختبار — كل الطلبات الجديدة ستكون وهمية' : 'تم إيقاف وضع الاختبار — رجعنا للمفتاح الحقيقي');
+});
+
+// ---------- API calls ----------
+function mockApiResponse(path, url){
+  const seed = url.length + [...url].reduce((a,c)=>a+c.charCodeAt(0),0);
+  if(path.includes('/comments')){
+    return { data: { comments: [
+      { user:'مستخدم_تجريبي1', text:'محتوى رائع، استفدت كتير 🔥', likes: 12 + (seed % 30) },
+      { user:'مستخدم_تجريبي2', text:'ينفع تعمل جزء ثاني عن هالموضوع؟', likes: 4 + (seed % 10) },
+      { user:'مستخدم_تجريبي3', text:'شكراً على المعلومة 🙏', likes: 1 },
+    ]}};
+  }
+  if(path.includes('channel') || path.includes('profile')){
+    return { data: {
+      username: 'test_account_' + (seed % 100), verified: (seed % 2 === 0),
+      followers: 8000 + (seed * 137) % 900000, following: 180 + (seed % 400),
+      totalPosts: 40 + (seed % 300),
+      bio: 'حساب تجريبي لأغراض اختبار وضع التجربة 📍 القاهرة - مصر'
+    }};
+  }
+  // stats endpoint (post/video/tweet)
+  return { data: {
+    views: 3000 + (seed * 321) % 500000,
+    likes: 150 + (seed * 17) % 40000,
+    comments: 10 + (seed % 800),
+    shares: 5 + (seed % 300),
+    channelName: 'test_account_' + (seed % 100),
+    channelLink: url.split('/').slice(0,3).join('/'),
+    title: 'منشور تجريبي لغايات وضع الاختبار #تجربة #اختبار_تجريبي'
+  }};
+}
+
+async function callApi(path, url){
+  if(testMode){
+    await new Promise(r => setTimeout(r, 350)); // محاكاة زمن الشبكة
+    return mockApiResponse(path, url);
+  }
+  if(!apiKey){ throw new Error('لم يتم حفظ مفتاح API بعد'); }
+  const endpoint = `${API_BASE}${path}?access_key=${encodeURIComponent(apiKey)}&url=${encodeURIComponent(url)}`;
+  const res = await fetch(endpoint);
+  let data;
+  try{ data = await res.json(); }
+  catch(e){ throw new Error('تعذرت قراءة استجابة الخادم'); }
+  if(!res.ok){
+    const msg = (data && (data.error || data.message)) || `فشل الطلب (${res.status})`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function extractStats(raw){
+  const d = raw && raw.data ? raw.data : raw || {};
+  const pick = (...keys) => { for(const k of keys){ if(d[k] !== undefined && d[k] !== null) return d[k]; } return null; };
+  const reactionsLikes = Array.isArray(d.reactions) ? d.reactions.reduce((sum,r)=> sum + (r.count||0), 0) : null;
+  return {
+    views: pick('play_count','views','view_count','playCount'),
+    likes: pick('digg_count','like_count','likes','likeCount') ?? reactionsLikes,
+    comments: pick('comment_count','comments','commentCount'),
+    shares: pick('share_count','shares','shareCount'),
+    channelName: pick('channelName','author','author_name','nickname','username','page','pageName'),
+    channelLink: pick('channelLink','profileUrl','authorUrl','pageUrl'),
+    title: pick('title','desc','description','text','caption'),
+  };
+}
+
+function extractChannel(raw){
+  const d = raw && raw.data ? raw.data : raw || {};
+  const pick = (...keys) => { for(const k of keys){ if(d[k] !== undefined && d[k] !== null) return d[k]; } return null; };
+  return {
+    username: pick('username','nickname','handle','name'),
+    verified: pick('verified'),
+    followers: pick('followers','subscribers','followerCount'),
+    following: pick('following'),
+    totalContent: pick('totalVideos','totalPosts','videoCount'),
+    totalLikes: pick('totalLikes','likes'),
+    bio: pick('bio','description'),
+  };
+}
+
+function extractComments(raw){
+  const d = raw && raw.data ? raw.data : raw || {};
+  const list = d.comments || d.items || d.list || (Array.i
