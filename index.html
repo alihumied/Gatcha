@@ -380,10 +380,32 @@ function isQuotaError(msg){
   return m.includes('quota') || m.includes('limit') || m.includes('credit') || m.includes('429') || m.includes('rate');
 }
 
+// يستخرج اسم حساب/معرّف من الرابط نفسه فوراً — بدون أي طلب API — لتمييز الروابط قبل جلب البيانات
+function extractHandleFromUrl(url, platform){
+  try{
+    if(platform === 'tiktok'){
+      const m = url.match(/@([\w.-]+)/);
+      if(m) return '@' + m[1];
+    }
+    if(platform === 'instagram'){
+      const m = url.match(/instagram\.com\/([\w.-]+)\/?($|\?)/);
+      if(m && !['reel','p','tv','stories'].includes(m[1])) return '@' + m[1];
+    }
+    if(platform === 'youtube'){
+      const m = url.match(/@([\w.-]+)/);
+      if(m) return '@' + m[1];
+    }
+    if(platform === 'twitter'){
+      const m = url.match(/(?:twitter|x)\.com\/([\w]+)\//);
+      if(m) return '@' + m[1];
+    }
+  }catch(e){}
+  return null;
+}
+
 async function addVideo(url, opts){
   opts = opts || {};
   if(!url){ if(!opts.silent) toast('أدخل الرابط'); return; }
-  if(!apiKey){ if(!opts.silent) toast('احفظ مفتاح API أولاً'); return; }
   const platform = detectPlatform(url);
   if(!platform){ if(!opts.silent) toast('المنصة غير مدعومة في هذا الرابط'); return; }
   if(videos.some(v => v.url === url)){ if(!opts.silent) toast('هذا الرابط محفوظ مسبقاً'); return; }
@@ -391,9 +413,21 @@ async function addVideo(url, opts){
   const addBtn = el('addBtn');
   if(!opts.silent){ addBtn.classList.add('loading'); addBtn.disabled = true; }
 
-  const entry = { id: Date.now().toString(36), url, platform, stats:null, hashtags:[], channelInfo:null, comments:null, showComments:false, showChannel:false, error:null, pending:false };
+  const quickHandle = extractHandleFromUrl(url, platform);
+  const entry = { id: Date.now().toString(36), url, platform, stats:null, hashtags:[], channelInfo:null, comments:null, showComments:false, showChannel:false, error:null, pending:false, quickHandle };
   videos.unshift(entry);
   renderFeed();
+
+  if(!apiKey){
+    entry.pending = true;
+    entry.error = 'الرابط محفوظ ✓ — أضف مفتاح API واضغط «تحديث» لجلب البيانات';
+    if(!opts.silent) el('urlInput').value = '';
+    toast('تم حفظ الرابط — أضف مفتاح API لاحقاً لجلب بياناته');
+    if(!opts.silent){ addBtn.classList.remove('loading'); addBtn.disabled = false; }
+    await persistVideos();
+    renderFeed();
+    return;
+  }
 
   try{
     const cfg = PLATFORMS[platform];
@@ -426,4 +460,269 @@ async function checkClipboard(silent){
     const platform = detectPlatform(text);
     if(!platform) return; // not a supported link, ignore quietly
     if(videos.some(v => v.url === text)) return; // already saved
-    await addV
+    await addVideo(text, { silent: true });
+  }catch(e){
+    // permission denied or clipboard empty — ignore silently in background mode
+    if(!silent) toast('يلزم السماح بالوصول للحافظة من إعدادات المتصفح');
+  }
+}
+
+el('pasteBtn').addEventListener('click', async ()=>{
+  clipboardWatchEnabled = true;
+  await checkClipboard(false);
+  toast('تفعيل المراقبة التلقائية للحافظة ✓');
+});
+
+window.addEventListener('focus', ()=>{ if(clipboardWatchEnabled) checkClipboard(true); });
+document.addEventListener('visibilitychange', ()=>{ if(clipboardWatchEnabled && document.visibilityState === 'visible') checkClipboard(true); });
+
+async function refreshVideo(id){
+  const v = videos.find(x => x.id === id);
+  if(!v) return;
+  v.error = null;
+  renderFeed();
+  try{
+    const cfg = PLATFORMS[v.platform];
+    const raw = await callApi(cfg.stats, v.url);
+    v.stats = extractStats(raw);
+    v.hashtags = extractHashtags(v.stats.title);
+    v.pending = false;
+  }catch(e){
+    v.pending = true;
+    v.error = isQuotaError(e.message)
+      ? 'انتهى رصيد المفتاح مؤقتاً — جرّب لاحقاً'
+      : `تعذّر جلب البيانات (${e.message})`;
+  }
+  await persistVideos();
+  renderFeed();
+}
+
+async function retryAllPending(){
+  const pendingItems = videos.filter(v => v.pending || !v.stats);
+  if(pendingItems.length === 0){ toast('لا توجد روابط بحاجة لإعادة محاولة'); return; }
+  toast(`جاري إعادة محاولة ${pendingItems.length} رابط...`);
+  for(const v of pendingItems){
+    await refreshVideo(v.id);
+    await new Promise(r => setTimeout(r, 400)); // فاصل بسيط بين الطلبات
+  }
+  toast('انتهت إعادة المحاولة');
+}
+
+async function toggleChannel(id){
+  const v = videos.find(x => x.id === id);
+  if(!v) return;
+  const cfg = PLATFORMS[v.platform];
+  if(!cfg.channel){ toast('بيانات الحساب غير متاحة لهذه المنصة'); return; }
+  v.showChannel = !v.showChannel;
+  if(v.showChannel && !v.channelInfo){
+    renderFeed();
+    try{
+      const profileUrl = profileUrlFromEntry(v);
+      const raw = await callApi(cfg.channel, profileUrl);
+      v.channelInfo = extractChannel(raw);
+    }catch(e){ v.error = e.message; }
+    await persistVideos();
+  }
+  renderFeed();
+}
+
+async function toggleComments(id){
+  const v = videos.find(x => x.id === id);
+  if(!v) return;
+  const cfg = PLATFORMS[v.platform];
+  if(!cfg.comments){ toast('التعليقات غير متاحة لهذه المنصة'); return; }
+  v.showComments = !v.showComments;
+  if(v.showComments && !v.comments){
+    v.loadingComments = true;
+    renderFeed();
+    try{
+      const raw = await callApi(cfg.comments, v.url);
+      v.comments = extractComments(raw);
+    }catch(e){ v.error = e.message; v.comments = []; }
+    v.loadingComments = false;
+    await persistVideos();
+  }
+  renderFeed();
+}
+
+async function removeVideo(id){
+  videos = videos.filter(v => v.id !== id);
+  await persistVideos();
+  renderFeed();
+}
+
+// ---------- render ----------
+const PLATFORM_ORDER = ['tiktok','youtube','instagram','facebook','twitter','linkedin'];
+
+function parseCountry(bio){
+  if(!bio) return null;
+  const match = bio.match(/📍\s*([^\n📍]+)/u);
+  if(!match) return null;
+  let loc = match[1].trim();
+  const parts = loc.split(/[-,]/).map(s => s.trim()).filter(Boolean);
+  let country = parts[parts.length - 1] || loc;
+  country = country.replace(/[^\p{L}\s]+$/gu, '').trim();
+  return country || null;
+}
+
+function renderFeed(){
+  const feed = el('feed');
+  el('countChip').textContent = `${videos.length}`;
+
+  if(videos.length === 0){
+    feed.innerHTML = `<div class="empty">لا توجد عناصر محفوظة بعد<br>أضف رابط من تيك توك، يوتيوب، إنستغرام، فيسبوك، إكس، أو لينكدإن</div>`;
+    return;
+  }
+
+  // group by platform
+  const platformGroups = {};
+  videos.forEach(v => {
+    const key = v.platform || 'unknown';
+    if(!platformGroups[key]) platformGroups[key] = [];
+    platformGroups[key].push(v);
+  });
+
+  const orderedKeys = [
+    ...PLATFORM_ORDER.filter(k => platformGroups[k]),
+    ...Object.keys(platformGroups).filter(k => !PLATFORM_ORDER.includes(k)),
+  ];
+
+  feed.innerHTML = orderedKeys.map(platKey => {
+    const cfg = PLATFORMS[platKey] || { label:'أخرى', color:'#8b8b98' };
+    const items = platformGroups[platKey];
+
+    // sub-group by account name within this platform
+    const accountGroups = {};
+    const accountOrder = [];
+    items.forEach(v => {
+      const accKey = (v.stats && v.stats.channelName) ? v.stats.channelName : (v.quickHandle || 'حساب غير معروف');
+      if(!accountGroups[accKey]){
+        accountGroups[accKey] = { name: accKey, link: null, country: null, items: [] };
+        accountOrder.push(accKey);
+      }
+      const grp = accountGroups[accKey];
+      if(!grp.link && v.stats && v.stats.channelLink) grp.link = v.stats.channelLink;
+      if(!grp.country && v.channelInfo && v.channelInfo.bio){
+        const c = parseCountry(v.channelInfo.bio);
+        if(c) grp.country = c;
+      }
+      grp.items.push(v);
+    });
+
+    const accountsHtml = accountOrder.map(accKey => {
+      const grp = accountGroups[accKey];
+      return `
+        <div class="account-group">
+          <div class="account-group-head">
+            <div>
+              <div class="account-group-name">${escapeHtml(grp.name)}</div>
+              <div class="account-group-country">${grp.country ? '🌍 ' + escapeHtml(grp.country) : 'الدولة غير معروفة — افتح «بيانات الحساب» لأي رابط لهذا الحساب'}</div>
+            </div>
+            ${grp.link ? `<a class="account-link" href="${escapeAttr(grp.link)}" target="_blank" rel="noopener">فتح الحساب ↗</a>` : ''}
+          </div>
+          ${grp.items.map(v => renderCard(v)).join('')}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="platform-section">
+        <div class="platform-section-head">
+          <span class="platform-dot" style="background:${cfg.color};"></span>
+          <span class="platform-section-title">${cfg.label}</span>
+          <span class="platform-section-count">${items.length}</span>
+        </div>
+        ${accountsHtml}
+      </div>`;
+  }).join('');
+}
+
+function renderCard(v){
+    const cfg = PLATFORMS[v.platform] || {label:'غير معروف', color:'#8b8b98'};
+    const s = v.stats;
+
+    const statsHtml = s ? `
+      <div class="stats-grid">
+        <div class="stat views"><div class="val">${fmtNum(s.views)}</div><div class="lbl">مشاهدة</div></div>
+        <div class="stat likes"><div class="val">${fmtNum(s.likes)}</div><div class="lbl">لايك</div></div>
+        <div class="stat"><div class="val">${fmtNum(s.comments)}</div><div class="lbl">تعليق</div></div>
+        <div class="stat"><div class="val">${fmtNum(s.shares)}</div><div class="lbl">مشاركة</div></div>
+      </div>` : '';
+
+    const hashtagsHtml = v.hashtags && v.hashtags.length
+      ? `<div class="hashtags">${v.hashtags.map(h => `<span class="hashtag">${escapeHtml(h)}</span>`).join('')}</div>`
+      : (s ? `<div class="no-hashtags">لا توجد هاشتاقات في النص</div>` : '');
+
+    const errorHtml = v.error ? `<div class="error-msg">⚠ ${escapeHtml(v.error)}</div>` : '';
+
+    let commentsHtml = '';
+    if(v.showComments){
+      if(v.loadingComments){
+        commentsHtml = `<div class="comments-box"><div class="comment"><div class="txt">جاري تحميل التعليقات...</div></div></div>`;
+      } else if(v.comments && v.comments.length){
+        commentsHtml = `<div class="comments-box">` + v.comments.map(c => `
+          <div class="comment">
+            <div class="who">${escapeHtml(c.user)}</div>
+            <div class="txt">${escapeHtml(c.text)}</div>
+            <div class="meta">${fmtNum(c.likes)} لايك</div>
+          </div>`).join('') + `</div>`;
+      } else if(v.comments){
+        commentsHtml = `<div class="comments-box"><div class="comment"><div class="txt">لا توجد تعليقات متاحة</div></div></div>`;
+      }
+    }
+
+    let channelHtml = '';
+    if(v.showChannel && v.channelInfo){
+      const ci = v.channelInfo;
+      channelHtml = `<div class="channel-box"><div class="channel-grid">
+        <div class="channel-stat"><div class="val">${fmtNum(ci.followers)}</div><div class="lbl">متابعون</div></div>
+        <div class="channel-stat"><div class="val">${fmtNum(ci.totalContent)}</div><div class="lbl">منشورات</div></div>
+        <div class="channel-stat"><div class="val">${ci.verified ? 'موثّق ✓' : '—'}</div><div class="lbl">التوثيق</div></div>
+        <div class="channel-stat"><div class="val">${fmtNum(ci.totalLikes)}</div><div class="lbl">إجمالي اللايكات</div></div>
+        ${ci.bio ? `<div class="channel-bio">${escapeHtml(ci.bio)}</div>` : ''}
+      </div></div>`;
+    } else if(v.showChannel){
+      channelHtml = `<div class="channel-box"><div class="comment"><div class="txt">جاري تحميل بيانات الحساب...</div></div></div>`;
+    }
+
+    const commentsBtn = cfg.comments ? `<button class="btn-ghost" onclick="toggleComments('${v.id}')">${v.showComments ? 'إخفاء التعليقات' : 'عرض التعليقات'}</button>` : '';
+    const channelBtn = cfg.channel ? `<button class="btn-ghost" onclick="toggleChannel('${v.id}')">${v.showChannel ? 'إخفاء الحساب' : 'بيانات الحساب'}</button>` : '';
+
+    return `
+      <div class="card">
+        <div class="platform-bar" style="background:${cfg.color};"></div>
+        <div class="card-top">
+          <div class="card-top-left">
+            <span class="platform-tag" style="background:${cfg.color};">${cfg.label}</span>
+            ${v.pending ? `<span class="platform-tag" style="background:#3a3a12; color:#ffd866;">⏳ بانتظار البيانات</span>` : ''}
+            <div class="card-title">${escapeHtml(s && s.title ? truncate(s.title, 100) : (v.quickHandle ? v.quickHandle : (v.pending ? 'رابط بانتظار البيانات' : 'بدون عنوان')))}</div>
+            <a class="card-url" href="${escapeAttr(v.url)}" target="_blank" rel="noopener">🔗 فتح الرابط الأصلي</a>
+          </div>
+          <button class="icon-btn" onclick="removeVideo('${v.id}')" title="حذف">✕</button>
+        </div>
+        ${statsHtml}
+        ${hashtagsHtml}
+        ${errorHtml}
+        <div class="card-actions">
+          <button class="btn-ghost" onclick="refreshVideo('${v.id}')">تحديث</button>
+          ${channelBtn}
+          ${commentsBtn}
+        </div>
+        ${channelHtml}
+        ${commentsHtml}
+      </div>`;
+}
+
+function truncate(str, n){ str = String(str); return str.length > n ? str.slice(0,n) + '…' : str; }
+function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escapeAttr(str){ return escapeHtml(str); }
+
+window.removeVideo = removeVideo;
+window.refreshVideo = refreshVideo;
+window.toggleComments = toggleComments;
+window.toggleChannel = toggleChannel;
+window.retryAllPending = retryAllPending;
+
+loadState();
+</script>
+</body>
+</html>
