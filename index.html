@@ -55,8 +55,14 @@
 
   .platform-row{ display:flex; justify-content:center; gap:8px; margin-top:16px; flex-wrap:wrap; }
   .p-chip{
-    font-size:11px; font-weight:700; padding:5px 10px; border-radius:20px;
-    border:1px solid var(--line); color:var(--text-dim);
+    font-size:11px; font-weight:700; padding:6px 12px; border-radius:20px;
+    border:1px solid var(--line); color:var(--text-dim); background:transparent;
+    font-family:'Tajawal',sans-serif; cursor:pointer; transition: border-color .15s, color .15s;
+  }
+  .p-chip:active{ transform: scale(0.96); }
+  .p-chip-count{
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px;
+    background: rgba(37,244,238,0.15); color: var(--cyan); border-radius:10px; padding:1px 6px; margin-right:4px;
   }
 
   .panel{ background: var(--bg-card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:16px; }
@@ -190,9 +196,13 @@
     <div class="logo-mark"><div class="logo-glyph"></div></div>
     <h1>رادار</h1>
     <div class="sub">احفظ روابط من أي منصة وتابع المشاهدات، اللايكات، الهاشتاقات، والحساب الأصلي</div>
-    <div class="platform-row">
-      <span class="p-chip">TikTok</span><span class="p-chip">YouTube</span><span class="p-chip">Instagram</span>
-      <span class="p-chip">Facebook</span><span class="p-chip">X / Twitter</span><span class="p-chip">LinkedIn</span>
+    <div class="platform-row" id="platformNav">
+      <button class="p-chip" onclick="jumpToPlatform('tiktok')">TikTok <span id="nav-count-tiktok" class="p-chip-count"></span></button>
+      <button class="p-chip" onclick="jumpToPlatform('youtube')">YouTube <span id="nav-count-youtube" class="p-chip-count"></span></button>
+      <button class="p-chip" onclick="jumpToPlatform('instagram')">Instagram <span id="nav-count-instagram" class="p-chip-count"></span></button>
+      <button class="p-chip" onclick="jumpToPlatform('facebook')">Facebook <span id="nav-count-facebook" class="p-chip-count"></span></button>
+      <button class="p-chip" onclick="jumpToPlatform('twitter')">X / Twitter <span id="nav-count-twitter" class="p-chip-count"></span></button>
+      <button class="p-chip" onclick="jumpToPlatform('linkedin')">LinkedIn <span id="nav-count-linkedin" class="p-chip-count"></span></button>
     </div>
   </header>
 
@@ -205,6 +215,7 @@
     <div class="row">
       <input type="password" id="apiKeyInput" placeholder="الصق مفتاح الوصول هنا (access_key)">
       <button class="btn-main" id="saveKeyBtn">حفظ</button>
+      <button class="btn-ghost" id="clearKeyBtn" title="مسح المفتاح الحالي">🗑</button>
     </div>
   </div>
 
@@ -223,6 +234,7 @@
   <div class="feed-head">
     <h2>المحفوظات</h2>
     <button class="btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="retryAllPending()">🔄 إعادة محاولة الناقص</button>
+    <button class="btn-ghost" style="padding:6px 12px; font-size:12px; color:#ff8fa3; border-color:rgba(254,44,85,0.4);" onclick="clearAllVideos()">🗑 مسح الكل</button>
     <span class="count-chip" id="countChip">0</span>
   </div>
 
@@ -289,7 +301,14 @@ async function loadState(){
   }catch(e){ videos = []; }
   // تنظيف أي بيانات تجريبية/وهمية كانت محفوظة من نسخة سابقة
   const before = videos.length;
-  videos = videos.filter(v => v.url && !/demo/i.test(v.url));
+  // تنظيف أي بيانات تجريبية/وهمية كانت محفوظة من نسخة سابقة (وضع الاختبار القديم)
+  videos = videos.filter(v => {
+    if(v.url && /demo/i.test(v.url)) return false;
+    if(v.stats && v.stats.channelName && /^test_account_/i.test(v.stats.channelName)) return false;
+    if(v.stats && v.stats.title && v.stats.title.includes('لغايات وضع الاختبار')) return false;
+    if(v.channelInfo && v.channelInfo.username && /^test_account_/i.test(v.channelInfo.username)) return false;
+    return true;
+  });
   if(videos.length !== before){ persistVideos(); }
   renderFeed();
 }
@@ -310,7 +329,52 @@ el('saveKeyBtn').addEventListener('click', ()=>{
   catch(e){ toast('تعذر حفظ المفتاح'); }
 });
 
+el('clearKeyBtn').addEventListener('click', ()=>{
+  apiKey = '';
+  el('apiKeyInput').value = '';
+  try{ localStorage.removeItem('socialkit-access-key'); }catch(e){}
+  setKeyStatus(false);
+  toast('تم مسح المفتاح — جاهز لإضافة مفتاح جديد');
+});
+
+async function clearAllVideos(){
+  if(videos.length === 0){ toast('لا توجد محفوظات لمسحها'); return; }
+  if(!confirm(`متأكد إنك بدك تمسح كل ${videos.length} رابط محفوظ؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
+  videos = [];
+  await persistVideos();
+  renderFeed();
+  toast('تم مسح كل المحفوظات');
+}
+window.clearAllVideos = clearAllVideos;
+
 // ---------- API calls ----------
+// ---------- جلب اسم فقط مجاناً (بدون مفتاح SocialKit) ----------
+// يستخدم microlink.io وهي خدمة مجانية عامة لقراءة عنوان/صاحب الصفحة من الرابط (بدون تسجيل لاستخدام خفيف)
+async function fetchFreeName(url){
+  const res = await fetch(`https://api.microlink.com/?url=${encodeURIComponent(url)}&meta=true`);
+  const json = await res.json();
+  if(json.status !== 'success' || !json.data) throw new Error('تعذر جلب الاسم');
+  const d = json.data;
+  return d.author || d.publisher || d.title || null;
+}
+
+async function fetchNameOnly(id){
+  const v = videos.find(x => x.id === id);
+  if(!v) return;
+  toast('جاري جلب الاسم...');
+  try{
+    const name = await fetchFreeName(v.url);
+    if(name){ v.quickHandle = name; toast('تم جلب الاسم ✓'); }
+    else toast('ما قدرت ألاقي اسم لهذا الرابط');
+  }catch(e){
+    toast('تعذر الاتصال بخدمة الاسم المجانية — جرب لاحقاً');
+  }
+  await persistVideos();
+  renderFeed();
+}
+window.fetchNameOnly = fetchNameOnly;
+
+// ---------- API calls (SocialKit) ----------
 async function callApi(path, url){
   if(!apiKey){ throw new Error('لم يتم حفظ مفتاح API بعد'); }
   const endpoint = `${API_BASE}${path}?access_key=${encodeURIComponent(apiKey)}&url=${encodeURIComponent(url)}`;
@@ -565,9 +629,38 @@ function parseCountry(bio){
   return country || null;
 }
 
+function updateNavCounts(){
+  const counts = {};
+  videos.forEach(v => { counts[v.platform] = (counts[v.platform] || 0) + 1; });
+  Object.keys(PLATFORMS).forEach(key => {
+    const badge = el(`nav-count-${key}`);
+    if(badge) badge.textContent = counts[key] ? counts[key] : '';
+  });
+}
+
+function jumpToPlatform(key){
+  if(!videos.some(v => v.platform === key)){ toast('لا توجد روابط محفوظة بعد لهذه المنصة'); return; }
+  if(collapsedPlatforms.has(key)){ collapsedPlatforms.delete(key); renderFeed(); }
+  setTimeout(()=>{
+    const target = document.getElementById('section-' + key);
+    if(target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 30);
+}
+window.jumpToPlatform = jumpToPlatform;
+
+let collapsedPlatforms = new Set(); // فارغة افتراضياً = كل الأقسام مفتوحة أول مرة
+
+function togglePlatformSection(key){
+  if(collapsedPlatforms.has(key)) collapsedPlatforms.delete(key);
+  else collapsedPlatforms.add(key);
+  renderFeed();
+}
+window.togglePlatformSection = togglePlatformSection;
+
 function renderFeed(){
   const feed = el('feed');
   el('countChip').textContent = `${videos.length}`;
+  updateNavCounts();
 
   if(videos.length === 0){
     feed.innerHTML = `<div class="empty">لا توجد عناصر محفوظة بعد<br>أضف رابط من تيك توك، يوتيوب، إنستغرام، فيسبوك، إكس، أو لينكدإن</div>`;
@@ -590,6 +683,7 @@ function renderFeed(){
   feed.innerHTML = orderedKeys.map(platKey => {
     const cfg = PLATFORMS[platKey] || { label:'أخرى', color:'#8b8b98' };
     const items = platformGroups[platKey];
+    const isCollapsed = collapsedPlatforms.has(platKey);
 
     // sub-group by account name within this platform
     const accountGroups = {};
@@ -609,7 +703,7 @@ function renderFeed(){
       grp.items.push(v);
     });
 
-    const accountsHtml = accountOrder.map(accKey => {
+    const accountsHtml = isCollapsed ? '' : accountOrder.map(accKey => {
       const grp = accountGroups[accKey];
       return `
         <div class="account-group">
@@ -625,11 +719,12 @@ function renderFeed(){
     }).join('');
 
     return `
-      <div class="platform-section">
-        <div class="platform-section-head">
+      <div class="platform-section" id="section-${platKey}">
+        <div class="platform-section-head" onclick="togglePlatformSection('${platKey}')" style="cursor:pointer;">
           <span class="platform-dot" style="background:${cfg.color};"></span>
           <span class="platform-section-title">${cfg.label}</span>
           <span class="platform-section-count">${items.length}</span>
+          <span style="font-size:11px; color:var(--text-faint); margin-right:4px;">${isCollapsed ? '▸ عرض' : '▾ طي'}</span>
         </div>
         ${accountsHtml}
       </div>`;
@@ -686,6 +781,7 @@ function renderCard(v){
 
     const commentsBtn = cfg.comments ? `<button class="btn-ghost" onclick="toggleComments('${v.id}')">${v.showComments ? 'إخفاء التعليقات' : 'عرض التعليقات'}</button>` : '';
     const channelBtn = cfg.channel ? `<button class="btn-ghost" onclick="toggleChannel('${v.id}')">${v.showChannel ? 'إخفاء الحساب' : 'بيانات الحساب'}</button>` : '';
+    const nameOnlyBtn = !s ? `<button class="btn-ghost" onclick="fetchNameOnly('${v.id}')">🏷️ اسم فقط (مجاني)</button>` : '';
 
     return `
       <div class="card">
@@ -706,6 +802,7 @@ function renderCard(v){
           <button class="btn-ghost" onclick="refreshVideo('${v.id}')">تحديث</button>
           ${channelBtn}
           ${commentsBtn}
+          ${nameOnlyBtn}
         </div>
         ${channelHtml}
         ${commentsHtml}
