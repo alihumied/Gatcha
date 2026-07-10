@@ -129,8 +129,9 @@
     display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700;
     padding:3px 8px; border-radius:20px; margin-bottom:6px; color:#000;
   }
-  .card-url{ font-family:'JetBrains Mono',monospace; font-size:11px; color: var(--text-dim); overflow-wrap:anywhere; direction:ltr; text-align:right; }
-  .card-title{ font-size:13px; color:var(--text); margin-top:4px; line-height:1.6; }
+  .card-title{ font-size:14px; font-weight:700; color: var(--text); line-height:1.6; margin-top:4px; }
+  .card-url{ font-family:'Tajawal',sans-serif; font-size:11px; color: var(--cyan); text-decoration:none; display:inline-block; margin-top:4px; }
+  .card-url:hover{ text-decoration:underline; }
   .icon-btn{ background:transparent; border:none; color: var(--text-faint); font-size:16px; padding:4px 6px; line-height:1; cursor:pointer; flex-shrink:0; }
   .icon-btn:hover{ color: var(--pink); }
 
@@ -205,10 +206,6 @@
       <input type="password" id="apiKeyInput" placeholder="الصق مفتاح الوصول هنا (access_key)">
       <button class="btn-main" id="saveKeyBtn">حفظ</button>
     </div>
-    <div class="row add-row">
-      <button class="btn-ghost" id="testModeBtn" style="flex:1;">🧪 وضع الاختبار: مطفأ</button>
-    </div>
-    <div class="notice-text" style="margin-top:8px;">فعّل وضع الاختبار عشان تجرب أي رابط حقيقي (تحديث، بيانات الحساب، تعليقات) ببيانات وهمية بدون ما يستهلك رصيد مفتاحك الفعلي.</div>
   </div>
 
   <div class="panel">
@@ -220,9 +217,6 @@
     <div class="row add-row">
       <button class="btn-ghost" id="pasteBtn" style="flex:1;">📋 لصق تلقائي من الحافظة</button>
     </div>
-    <div class="row add-row">
-      <button class="btn-ghost" id="demoBtn" style="flex:1;">🧪 تجربة النظام ببيانات وهمية (بدون مفتاح)</button>
-    </div>
     <div class="notice-text" style="margin-top:8px;">فعّل هذا الزر مرة واحدة (يطلب المتصفح إذن الوصول للحافظة). بعدها، أي رابط تنسخه من أي تطبيق وترجع لهذه الصفحة، رح يتحفظ تلقائياً.</div>
   </div>
 
@@ -230,15 +224,6 @@
     <h2>المحفوظات</h2>
     <button class="btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="retryAllPending()">🔄 إعادة محاولة الناقص</button>
     <span class="count-chip" id="countChip">0</span>
-  </div>
-
-  <div class="panel" style="border-color:rgba(255,216,102,0.35); background:rgba(255,216,102,0.05);">
-    <div class="notice-text" style="margin-bottom:10px;">⚠ احفظ نسخة احتياطية بشكل دوري من هنا — هذا يحميك من ضياع الروابط لو انمسح تخزين المتصفح لأي سبب.</div>
-    <div class="row">
-      <button class="btn-ghost" style="flex:1;" onclick="exportBackup()">⬇️ تصدير نسخة احتياطية</button>
-      <button class="btn-ghost" style="flex:1;" onclick="el('importFile').click()">⬆️ استيراد نسخة احتياطية</button>
-    </div>
-    <input type="file" id="importFile" accept="application/json" style="display:none;">
   </div>
 
   <div id="feed"></div>
@@ -266,7 +251,6 @@ function detectPlatform(url){
 }
 
 let apiKey = '';
-let testMode = false;
 let videos = [];
 
 const el = (id) => document.getElementById(id);
@@ -300,13 +284,13 @@ async function loadState(){
     if(savedKey){ apiKey = savedKey; el('apiKeyInput').value = apiKey; setKeyStatus(true); }
   }catch(e){}
   try{
-    const savedTestMode = localStorage.getItem('test-mode');
-    if(savedTestMode === '1'){ testMode = true; setTestModeUI(); }
-  }catch(e){}
-  try{
     const savedList = localStorage.getItem('saved-videos-v2');
     if(savedList){ videos = JSON.parse(savedList); }
   }catch(e){ videos = []; }
+  // تنظيف أي بيانات تجريبية/وهمية كانت محفوظة من نسخة سابقة
+  const before = videos.length;
+  videos = videos.filter(v => v.url && !/demo/i.test(v.url));
+  if(videos.length !== before){ persistVideos(); }
   renderFeed();
 }
 async function persistVideos(){
@@ -326,53 +310,8 @@ el('saveKeyBtn').addEventListener('click', ()=>{
   catch(e){ toast('تعذر حفظ المفتاح'); }
 });
 
-function setTestModeUI(){
-  const btn = el('testModeBtn');
-  if(testMode){ btn.textContent = '🧪 وضع الاختبار: مُفعّل (لا يستهلك المفتاح)'; btn.style.color = '#25F4EE'; btn.style.borderColor = 'rgba(37,244,238,0.5)'; }
-  else{ btn.textContent = '🧪 وضع الاختبار: مطفأ'; btn.style.color = ''; btn.style.borderColor = ''; }
-}
-el('testModeBtn').addEventListener('click', ()=>{
-  testMode = !testMode;
-  try{ localStorage.setItem('test-mode', testMode ? '1' : '0'); }catch(e){}
-  setTestModeUI();
-  toast(testMode ? 'تم تفعيل وضع الاختبار — كل الطلبات الجديدة ستكون وهمية' : 'تم إيقاف وضع الاختبار — رجعنا للمفتاح الحقيقي');
-});
-
 // ---------- API calls ----------
-function mockApiResponse(path, url){
-  const seed = url.length + [...url].reduce((a,c)=>a+c.charCodeAt(0),0);
-  if(path.includes('/comments')){
-    return { data: { comments: [
-      { user:'مستخدم_تجريبي1', text:'محتوى رائع، استفدت كتير 🔥', likes: 12 + (seed % 30) },
-      { user:'مستخدم_تجريبي2', text:'ينفع تعمل جزء ثاني عن هالموضوع؟', likes: 4 + (seed % 10) },
-      { user:'مستخدم_تجريبي3', text:'شكراً على المعلومة 🙏', likes: 1 },
-    ]}};
-  }
-  if(path.includes('channel') || path.includes('profile')){
-    return { data: {
-      username: 'test_account_' + (seed % 100), verified: (seed % 2 === 0),
-      followers: 8000 + (seed * 137) % 900000, following: 180 + (seed % 400),
-      totalPosts: 40 + (seed % 300),
-      bio: 'حساب تجريبي لأغراض اختبار وضع التجربة 📍 القاهرة - مصر'
-    }};
-  }
-  // stats endpoint (post/video/tweet)
-  return { data: {
-    views: 3000 + (seed * 321) % 500000,
-    likes: 150 + (seed * 17) % 40000,
-    comments: 10 + (seed % 800),
-    shares: 5 + (seed % 300),
-    channelName: 'test_account_' + (seed % 100),
-    channelLink: url.split('/').slice(0,3).join('/'),
-    title: 'منشور تجريبي لغايات وضع الاختبار #تجربة #اختبار_تجريبي'
-  }};
-}
-
 async function callApi(path, url){
-  if(testMode){
-    await new Promise(r => setTimeout(r, 350)); // محاكاة زمن الشبكة
-    return mockApiResponse(path, url);
-  }
   if(!apiKey){ throw new Error('لم يتم حفظ مفتاح API بعد'); }
   const endpoint = `${API_BASE}${path}?access_key=${encodeURIComponent(apiKey)}&url=${encodeURIComponent(url)}`;
   const res = await fetch(endpoint);
@@ -444,7 +383,7 @@ function isQuotaError(msg){
 async function addVideo(url, opts){
   opts = opts || {};
   if(!url){ if(!opts.silent) toast('أدخل الرابط'); return; }
-  if(!apiKey && !testMode){ if(!opts.silent) toast('احفظ مفتاح API أولاً أو فعّل وضع الاختبار'); return; }
+  if(!apiKey){ if(!opts.silent) toast('احفظ مفتاح API أولاً'); return; }
   const platform = detectPlatform(url);
   if(!platform){ if(!opts.silent) toast('المنصة غير مدعومة في هذا الرابط'); return; }
   if(videos.some(v => v.url === url)){ if(!opts.silent) toast('هذا الرابط محفوظ مسبقاً'); return; }
@@ -476,106 +415,6 @@ async function addVideo(url, opts){
   }
 }
 
-// ---------- backup export / import ----------
-function exportBackup(){
-  if(videos.length === 0){ toast('لا توجد بيانات لتصديرها'); return; }
-  const blob = new Blob([JSON.stringify(videos, null, 2)], { type:'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const stamp = new Date().toISOString().slice(0,10);
-  a.href = url;
-  a.download = `radar-backup-${stamp}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  toast('تم تصدير النسخة الاحتياطية ✓');
-}
-
-el('importFile').addEventListener('change', async (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  try{
-    const text = await file.text();
-    const imported = JSON.parse(text);
-    if(!Array.isArray(imported)){ toast('ملف غير صالح'); return; }
-    const existingUrls = new Set(videos.map(v => v.url));
-    const fresh = imported.filter(v => v && v.url && !existingUrls.has(v.url));
-    videos = [...fresh, ...videos];
-    await persistVideos();
-    renderFeed();
-    toast(`تم استيراد ${fresh.length} رابط جديد ✓`);
-  }catch(err){
-    toast('تعذّرت قراءة الملف — تأكد أنه نسخة احتياطية صحيحة');
-  }
-  e.target.value = '';
-});
-
-window.exportBackup = exportBackup;
-
-
-function makeDemoEntry({platform, url, channelName, channelLink, title, views, likes, comments, shares, bio, pending, error}){
-  const stats = pending ? null : { views, likes, comments, shares, channelName, channelLink, title };
-  return {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    url, platform,
-    stats,
-    hashtags: stats ? extractHashtags(title) : [],
-    channelInfo: bio ? { username: channelName, verified: true, followers: Math.floor(Math.random()*900000)+50000, following: 210, totalContent: 340, totalLikes: 2500000, bio } : null,
-    comments: null, showComments:false, showChannel:false,
-    error: error || null, pending: !!pending,
-  };
-}
-
-function loadDemoData(){
-  const demo = [
-    makeDemoEntry({
-      platform:'tiktok', url:'https://www.tiktok.com/@demo_user/video/1111111111',
-      channelName:'demo_user', channelLink:'https://www.tiktok.com/@demo_user',
-      title:'روتيني الصباحي ☀️ #صباح_الخير #روتين #لايف_ستايل',
-      views: 152000, likes: 12400, comments: 340, shares: 210,
-      bio:'محتوى يومي عن نمط الحياة 📍 عمّان - الأردن'
-    }),
-    makeDemoEntry({
-      platform:'tiktok', url:'https://www.tiktok.com/@demo_user/video/2222222222',
-      channelName:'demo_user', channelLink:'https://www.tiktok.com/@demo_user',
-      title:'تجربة مطعم جديد 🍔 #فود #مطاعم_عمان',
-      views: 88000, likes: 6100, comments: 150, shares: 80,
-      bio:'محتوى يومي عن نمط الحياة 📍 عمّان - الأردن'
-    }),
-    makeDemoEntry({
-      platform:'youtube', url:'https://www.youtube.com/watch?v=demo12345',
-      channelName:'Demo Channel', channelLink:'https://www.youtube.com/@demochannel',
-      title:'شرح كامل للمشروع خطوة بخطوة #تعليم #برمجة',
-      views: 45000, likes: 2300, comments: 180, shares: null,
-      bio:'قناة تعليمية تقنية 📍 دبي - الإمارات'
-    }),
-    makeDemoEntry({
-      platform:'instagram', url:'https://www.instagram.com/reel/Demo_ReeL123/',
-      channelName:'nadia.style', channelLink:'https://www.instagram.com/nadia.style',
-      title:'إطلالة اليوم ✨ #موضة #ستايل #outfitideas',
-      views: 210000, likes: 15200, comments: 430, shares: 90,
-      bio:'محتوى موضة وستايل 📍 بيروت - لبنان'
-    }),
-    makeDemoEntry({
-      platform:'facebook', url:'https://www.facebook.com/share/demoLinkAbc',
-      channelName:null, channelLink:null, title:null,
-      pending:true, error:'الرابط محفوظ ✓ — انتهى رصيد المفتاح مؤقتاً، اضغط «إعادة المحاولة» لاحقاً'
-    }),
-  ];
-  // avoid duplicating demo entries if clicked twice
-  const existingUrls = new Set(videos.map(v => v.url));
-  const fresh = demo.filter(d => !existingUrls.has(d.url));
-  if(fresh.length === 0){ toast('البيانات الوهمية موجودة مسبقاً'); return; }
-  videos = [...fresh, ...videos];
-  persistVideos();
-  renderFeed();
-  toast('تم تحميل بيانات وهمية للتجربة 🧪');
-}
-
-el('demoBtn').addEventListener('click', loadDemoData);
-
-
 let clipboardWatchEnabled = false;
 let lastClipboardText = '';
 
@@ -587,269 +426,4 @@ async function checkClipboard(silent){
     const platform = detectPlatform(text);
     if(!platform) return; // not a supported link, ignore quietly
     if(videos.some(v => v.url === text)) return; // already saved
-    await addVideo(text, { silent: true });
-  }catch(e){
-    // permission denied or clipboard empty — ignore silently in background mode
-    if(!silent) toast('يلزم السماح بالوصول للحافظة من إعدادات المتصفح');
-  }
-}
-
-el('pasteBtn').addEventListener('click', async ()=>{
-  clipboardWatchEnabled = true;
-  await checkClipboard(false);
-  toast('تفعيل المراقبة التلقائية للحافظة ✓');
-});
-
-window.addEventListener('focus', ()=>{ if(clipboardWatchEnabled) checkClipboard(true); });
-document.addEventListener('visibilitychange', ()=>{ if(clipboardWatchEnabled && document.visibilityState === 'visible') checkClipboard(true); });
-
-async function refreshVideo(id){
-  const v = videos.find(x => x.id === id);
-  if(!v) return;
-  v.error = null;
-  renderFeed();
-  try{
-    const cfg = PLATFORMS[v.platform];
-    const raw = await callApi(cfg.stats, v.url);
-    v.stats = extractStats(raw);
-    v.hashtags = extractHashtags(v.stats.title);
-    v.pending = false;
-  }catch(e){
-    v.pending = true;
-    v.error = isQuotaError(e.message)
-      ? 'انتهى رصيد المفتاح مؤقتاً — جرّب لاحقاً'
-      : `تعذّر جلب البيانات (${e.message})`;
-  }
-  await persistVideos();
-  renderFeed();
-}
-
-async function retryAllPending(){
-  const pendingItems = videos.filter(v => v.pending || !v.stats);
-  if(pendingItems.length === 0){ toast('لا توجد روابط بحاجة لإعادة محاولة'); return; }
-  toast(`جاري إعادة محاولة ${pendingItems.length} رابط...`);
-  for(const v of pendingItems){
-    await refreshVideo(v.id);
-    await new Promise(r => setTimeout(r, 400)); // فاصل بسيط بين الطلبات
-  }
-  toast('انتهت إعادة المحاولة');
-}
-
-async function toggleChannel(id){
-  const v = videos.find(x => x.id === id);
-  if(!v) return;
-  const cfg = PLATFORMS[v.platform];
-  if(!cfg.channel){ toast('بيانات الحساب غير متاحة لهذه المنصة'); return; }
-  v.showChannel = !v.showChannel;
-  if(v.showChannel && !v.channelInfo){
-    renderFeed();
-    try{
-      const profileUrl = profileUrlFromEntry(v);
-      const raw = await callApi(cfg.channel, profileUrl);
-      v.channelInfo = extractChannel(raw);
-    }catch(e){ v.error = e.message; }
-    await persistVideos();
-  }
-  renderFeed();
-}
-
-async function toggleComments(id){
-  const v = videos.find(x => x.id === id);
-  if(!v) return;
-  const cfg = PLATFORMS[v.platform];
-  if(!cfg.comments){ toast('التعليقات غير متاحة لهذه المنصة'); return; }
-  v.showComments = !v.showComments;
-  if(v.showComments && !v.comments){
-    v.loadingComments = true;
-    renderFeed();
-    try{
-      const raw = await callApi(cfg.comments, v.url);
-      v.comments = extractComments(raw);
-    }catch(e){ v.error = e.message; v.comments = []; }
-    v.loadingComments = false;
-    await persistVideos();
-  }
-  renderFeed();
-}
-
-async function removeVideo(id){
-  videos = videos.filter(v => v.id !== id);
-  await persistVideos();
-  renderFeed();
-}
-
-// ---------- render ----------
-const PLATFORM_ORDER = ['tiktok','youtube','instagram','facebook','twitter','linkedin'];
-
-function parseCountry(bio){
-  if(!bio) return null;
-  const match = bio.match(/📍\s*([^\n📍]+)/u);
-  if(!match) return null;
-  let loc = match[1].trim();
-  const parts = loc.split(/[-,]/).map(s => s.trim()).filter(Boolean);
-  let country = parts[parts.length - 1] || loc;
-  country = country.replace(/[^\p{L}\s]+$/gu, '').trim();
-  return country || null;
-}
-
-function renderFeed(){
-  const feed = el('feed');
-  el('countChip').textContent = `${videos.length}`;
-
-  if(videos.length === 0){
-    feed.innerHTML = `<div class="empty">لا توجد عناصر محفوظة بعد<br>أضف رابط من تيك توك، يوتيوب، إنستغرام، فيسبوك، إكس، أو لينكدإن</div>`;
-    return;
-  }
-
-  // group by platform
-  const platformGroups = {};
-  videos.forEach(v => {
-    const key = v.platform || 'unknown';
-    if(!platformGroups[key]) platformGroups[key] = [];
-    platformGroups[key].push(v);
-  });
-
-  const orderedKeys = [
-    ...PLATFORM_ORDER.filter(k => platformGroups[k]),
-    ...Object.keys(platformGroups).filter(k => !PLATFORM_ORDER.includes(k)),
-  ];
-
-  feed.innerHTML = orderedKeys.map(platKey => {
-    const cfg = PLATFORMS[platKey] || { label:'أخرى', color:'#8b8b98' };
-    const items = platformGroups[platKey];
-
-    // sub-group by account name within this platform
-    const accountGroups = {};
-    const accountOrder = [];
-    items.forEach(v => {
-      const accKey = (v.stats && v.stats.channelName) ? v.stats.channelName : 'حساب غير معروف';
-      if(!accountGroups[accKey]){
-        accountGroups[accKey] = { name: accKey, link: null, country: null, items: [] };
-        accountOrder.push(accKey);
-      }
-      const grp = accountGroups[accKey];
-      if(!grp.link && v.stats && v.stats.channelLink) grp.link = v.stats.channelLink;
-      if(!grp.country && v.channelInfo && v.channelInfo.bio){
-        const c = parseCountry(v.channelInfo.bio);
-        if(c) grp.country = c;
-      }
-      grp.items.push(v);
-    });
-
-    const accountsHtml = accountOrder.map(accKey => {
-      const grp = accountGroups[accKey];
-      return `
-        <div class="account-group">
-          <div class="account-group-head">
-            <div>
-              <div class="account-group-name">${escapeHtml(grp.name)}</div>
-              <div class="account-group-country">${grp.country ? '🌍 ' + escapeHtml(grp.country) : 'الدولة غير معروفة — افتح «بيانات الحساب» لأي رابط لهذا الحساب'}</div>
-            </div>
-            ${grp.link ? `<a class="account-link" href="${escapeAttr(grp.link)}" target="_blank" rel="noopener">فتح الحساب ↗</a>` : ''}
-          </div>
-          ${grp.items.map(v => renderCard(v)).join('')}
-        </div>`;
-    }).join('');
-
-    return `
-      <div class="platform-section">
-        <div class="platform-section-head">
-          <span class="platform-dot" style="background:${cfg.color};"></span>
-          <span class="platform-section-title">${cfg.label}</span>
-          <span class="platform-section-count">${items.length}</span>
-        </div>
-        ${accountsHtml}
-      </div>`;
-  }).join('');
-}
-
-function renderCard(v){
-    const cfg = PLATFORMS[v.platform] || {label:'غير معروف', color:'#8b8b98'};
-    const s = v.stats;
-
-    const statsHtml = s ? `
-      <div class="stats-grid">
-        <div class="stat views"><div class="val">${fmtNum(s.views)}</div><div class="lbl">مشاهدة</div></div>
-        <div class="stat likes"><div class="val">${fmtNum(s.likes)}</div><div class="lbl">لايك</div></div>
-        <div class="stat"><div class="val">${fmtNum(s.comments)}</div><div class="lbl">تعليق</div></div>
-        <div class="stat"><div class="val">${fmtNum(s.shares)}</div><div class="lbl">مشاركة</div></div>
-      </div>` : '';
-
-    const hashtagsHtml = v.hashtags && v.hashtags.length
-      ? `<div class="hashtags">${v.hashtags.map(h => `<span class="hashtag">${escapeHtml(h)}</span>`).join('')}</div>`
-      : (s ? `<div class="no-hashtags">لا توجد هاشتاقات في النص</div>` : '');
-
-    const errorHtml = v.error ? `<div class="error-msg">⚠ ${escapeHtml(v.error)}</div>` : '';
-
-    let commentsHtml = '';
-    if(v.showComments){
-      if(v.loadingComments){
-        commentsHtml = `<div class="comments-box"><div class="comment"><div class="txt">جاري تحميل التعليقات...</div></div></div>`;
-      } else if(v.comments && v.comments.length){
-        commentsHtml = `<div class="comments-box">` + v.comments.map(c => `
-          <div class="comment">
-            <div class="who">${escapeHtml(c.user)}</div>
-            <div class="txt">${escapeHtml(c.text)}</div>
-            <div class="meta">${fmtNum(c.likes)} لايك</div>
-          </div>`).join('') + `</div>`;
-      } else if(v.comments){
-        commentsHtml = `<div class="comments-box"><div class="comment"><div class="txt">لا توجد تعليقات متاحة</div></div></div>`;
-      }
-    }
-
-    let channelHtml = '';
-    if(v.showChannel && v.channelInfo){
-      const ci = v.channelInfo;
-      channelHtml = `<div class="channel-box"><div class="channel-grid">
-        <div class="channel-stat"><div class="val">${fmtNum(ci.followers)}</div><div class="lbl">متابعون</div></div>
-        <div class="channel-stat"><div class="val">${fmtNum(ci.totalContent)}</div><div class="lbl">منشورات</div></div>
-        <div class="channel-stat"><div class="val">${ci.verified ? 'موثّق ✓' : '—'}</div><div class="lbl">التوثيق</div></div>
-        <div class="channel-stat"><div class="val">${fmtNum(ci.totalLikes)}</div><div class="lbl">إجمالي اللايكات</div></div>
-        ${ci.bio ? `<div class="channel-bio">${escapeHtml(ci.bio)}</div>` : ''}
-      </div></div>`;
-    } else if(v.showChannel){
-      channelHtml = `<div class="channel-box"><div class="comment"><div class="txt">جاري تحميل بيانات الحساب...</div></div></div>`;
-    }
-
-    const commentsBtn = cfg.comments ? `<button class="btn-ghost" onclick="toggleComments('${v.id}')">${v.showComments ? 'إخفاء التعليقات' : 'عرض التعليقات'}</button>` : '';
-    const channelBtn = cfg.channel ? `<button class="btn-ghost" onclick="toggleChannel('${v.id}')">${v.showChannel ? 'إخفاء الحساب' : 'بيانات الحساب'}</button>` : '';
-
-    return `
-      <div class="card">
-        <div class="platform-bar" style="background:${cfg.color};"></div>
-        <div class="card-top">
-          <div class="card-top-left">
-            <span class="platform-tag" style="background:${cfg.color};">${cfg.label}</span>
-            ${v.pending ? `<span class="platform-tag" style="background:#3a3a12; color:#ffd866;">⏳ بانتظار البيانات</span>` : ''}
-            <div class="card-url">${escapeHtml(v.url)}</div>
-            ${s && s.title ? `<div class="card-title">${escapeHtml(truncate(s.title, 120))}</div>` : ''}
-          </div>
-          <button class="icon-btn" onclick="removeVideo('${v.id}')" title="حذف">✕</button>
-        </div>
-        ${statsHtml}
-        ${hashtagsHtml}
-        ${errorHtml}
-        <div class="card-actions">
-          <button class="btn-ghost" onclick="refreshVideo('${v.id}')">تحديث</button>
-          ${channelBtn}
-          ${commentsBtn}
-        </div>
-        ${channelHtml}
-        ${commentsHtml}
-      </div>`;
-}
-
-function truncate(str, n){ str = String(str); return str.length > n ? str.slice(0,n) + '…' : str; }
-function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function escapeAttr(str){ return escapeHtml(str); }
-
-window.removeVideo = removeVideo;
-window.refreshVideo = refreshVideo;
-window.toggleComments = toggleComments;
-window.toggleChannel = toggleChannel;
-window.retryAllPending = retryAllPending;
-
-loadState();
-</script>
-</body>
-</html>
+    await addV
