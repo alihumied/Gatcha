@@ -234,7 +234,6 @@
   <div class="feed-head">
     <h2>المحفوظات</h2>
     <button class="btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="retryAllPending()">🔄 إعادة محاولة الناقص</button>
-    <button class="btn-ghost" style="padding:6px 12px; font-size:12px; color:#ff8fa3; border-color:rgba(254,44,85,0.4);" onclick="clearAllVideos()">🗑 مسح الكل</button>
     <span class="count-chip" id="countChip">0</span>
   </div>
 
@@ -337,16 +336,6 @@ el('clearKeyBtn').addEventListener('click', ()=>{
   toast('تم مسح المفتاح — جاهز لإضافة مفتاح جديد');
 });
 
-async function clearAllVideos(){
-  if(videos.length === 0){ toast('لا توجد محفوظات لمسحها'); return; }
-  if(!confirm(`متأكد إنك بدك تمسح كل ${videos.length} رابط محفوظ؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
-  videos = [];
-  await persistVideos();
-  renderFeed();
-  toast('تم مسح كل المحفوظات');
-}
-window.clearAllVideos = clearAllVideos;
-
 // ---------- API calls ----------
 // ---------- جلب اسم فقط مجاناً (بدون مفتاح SocialKit) ----------
 // يستخدم microlink.io وهي خدمة مجانية عامة لقراءة عنوان/صاحب الصفحة من الرابط (بدون تسجيل لاستخدام خفيف)
@@ -365,9 +354,9 @@ async function fetchNameOnly(id){
   try{
     const name = await fetchFreeName(v.url);
     if(name){ v.quickHandle = name; toast('تم جلب الاسم ✓'); }
-    else toast('ما قدرت ألاقي اسم لهذا الرابط');
+    else toast('هذا الرابط لا يكشف اسم صاحبه علناً (شائع بروابط فيسبوك المختصرة)');
   }catch(e){
-    toast('تعذر الاتصال بخدمة الاسم المجانية — جرب لاحقاً');
+    toast('تعذر جلب الاسم لهذا الرابط تحديداً — جرب رابط آخر أو استخدم مفتاح SocialKit');
   }
   await persistVideos();
   renderFeed();
@@ -789,8 +778,7 @@ function renderCard(v){
         <div class="card-top">
           <div class="card-top-left">
             <span class="platform-tag" style="background:${cfg.color};">${cfg.label}</span>
-            ${v.pending ? `<span class="platform-tag" style="background:#3a3a12; color:#ffd866;">⏳ بانتظار البيانات</span>` : ''}
-            <div class="card-title">${escapeHtml(s && s.title ? truncate(s.title, 100) : (v.quickHandle ? v.quickHandle : (v.pending ? 'رابط بانتظار البيانات' : 'بدون عنوان')))}</div>
+            <div class="card-title">${escapeHtml(s && s.title ? truncate(s.title, 100) : (v.quickHandle ? v.quickHandle : 'رابط محفوظ'))}</div>
             <a class="card-url" href="${escapeAttr(v.url)}" target="_blank" rel="noopener">🔗 فتح الرابط الأصلي</a>
           </div>
           <button class="icon-btn" onclick="removeVideo('${v.id}')" title="حذف">✕</button>
