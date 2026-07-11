@@ -206,10 +206,6 @@
     </div>
   </header>
 
-  <div class="panel notice">
-    <div class="notice-text">⚠ افتح هذا الملف مباشرة في متصفح (Chrome) بعد تحميله على جهازك — لن يعمل جلب البيانات داخل معاينة المحادثة لأنها بيئة معزولة عن الإنترنت الخارجي.</div>
-  </div>
-
   <div class="panel">
     <div class="panel-label"><span>مفتاح SocialKit API</span><span id="keyStatus" class="key-status missing">غير محفوظ</span></div>
     <div class="row">
@@ -335,33 +331,6 @@ el('clearKeyBtn').addEventListener('click', ()=>{
   setKeyStatus(false);
   toast('تم مسح المفتاح — جاهز لإضافة مفتاح جديد');
 });
-
-// ---------- API calls ----------
-// ---------- جلب اسم فقط مجاناً (بدون مفتاح SocialKit) ----------
-// يستخدم microlink.io وهي خدمة مجانية عامة لقراءة عنوان/صاحب الصفحة من الرابط (بدون تسجيل لاستخدام خفيف)
-async function fetchFreeName(url){
-  const res = await fetch(`https://api.microlink.com/?url=${encodeURIComponent(url)}&meta=true`);
-  const json = await res.json();
-  if(json.status !== 'success' || !json.data) throw new Error('تعذر جلب الاسم');
-  const d = json.data;
-  return d.author || d.publisher || d.title || null;
-}
-
-async function fetchNameOnly(id){
-  const v = videos.find(x => x.id === id);
-  if(!v) return;
-  toast('جاري جلب الاسم...');
-  try{
-    const name = await fetchFreeName(v.url);
-    if(name){ v.quickHandle = name; toast('تم جلب الاسم ✓'); }
-    else toast('هذا الرابط لا يكشف اسم صاحبه علناً (شائع بروابط فيسبوك المختصرة)');
-  }catch(e){
-    toast('تعذر جلب الاسم لهذا الرابط تحديداً — جرب رابط آخر أو استخدم مفتاح SocialKit');
-  }
-  await persistVideos();
-  renderFeed();
-}
-window.fetchNameOnly = fetchNameOnly;
 
 // ---------- API calls (SocialKit) ----------
 async function callApi(path, url){
@@ -629,7 +598,7 @@ function updateNavCounts(){
 
 function jumpToPlatform(key){
   if(!videos.some(v => v.platform === key)){ toast('لا توجد روابط محفوظة بعد لهذه المنصة'); return; }
-  if(collapsedPlatforms.has(key)){ collapsedPlatforms.delete(key); renderFeed(); }
+  if(collapsedPlatforms.has(key)){ collapsedPlatforms.delete(key); saveCollapsedState(); renderFeed(); }
   setTimeout(()=>{
     const target = document.getElementById('section-' + key);
     if(target) target.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -637,11 +606,20 @@ function jumpToPlatform(key){
 }
 window.jumpToPlatform = jumpToPlatform;
 
-let collapsedPlatforms = new Set(); // فارغة افتراضياً = كل الأقسام مفتوحة أول مرة
+let collapsedPlatforms = new Set();
+try{
+  const savedCollapsed = localStorage.getItem('collapsed-platforms');
+  if(savedCollapsed) collapsedPlatforms = new Set(JSON.parse(savedCollapsed));
+}catch(e){}
+
+function saveCollapsedState(){
+  try{ localStorage.setItem('collapsed-platforms', JSON.stringify([...collapsedPlatforms])); }catch(e){}
+}
 
 function togglePlatformSection(key){
   if(collapsedPlatforms.has(key)) collapsedPlatforms.delete(key);
   else collapsedPlatforms.add(key);
+  saveCollapsedState();
   renderFeed();
 }
 window.togglePlatformSection = togglePlatformSection;
@@ -770,7 +748,6 @@ function renderCard(v){
 
     const commentsBtn = cfg.comments ? `<button class="btn-ghost" onclick="toggleComments('${v.id}')">${v.showComments ? 'إخفاء التعليقات' : 'عرض التعليقات'}</button>` : '';
     const channelBtn = cfg.channel ? `<button class="btn-ghost" onclick="toggleChannel('${v.id}')">${v.showChannel ? 'إخفاء الحساب' : 'بيانات الحساب'}</button>` : '';
-    const nameOnlyBtn = !s ? `<button class="btn-ghost" onclick="fetchNameOnly('${v.id}')">🏷️ اسم فقط (مجاني)</button>` : '';
 
     return `
       <div class="card">
@@ -790,7 +767,6 @@ function renderCard(v){
           <button class="btn-ghost" onclick="refreshVideo('${v.id}')">تحديث</button>
           ${channelBtn}
           ${commentsBtn}
-          ${nameOnlyBtn}
         </div>
         ${channelHtml}
         ${commentsHtml}
